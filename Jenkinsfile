@@ -2,12 +2,6 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/Zach-Havoc/CI-CD.git'
-            }
-        }
-
         stage('Build') {
             steps {
                 sh 'echo "Building project..."'
