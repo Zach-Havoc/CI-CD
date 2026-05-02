@@ -1,16 +1,31 @@
 pipeline {
     agent any
-
+    environment {
+        GIT_REPO_URL = 'https://github.com/Zach-Havoc/CI-CD.git'
+        GIT_CREDENTIALS_ID = 'github-pat2'
+        GIT_BRANCH = 'main'
+    }
     stages {
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                sh 'echo "Building project..."'
+                checkout([$class: 'GitSCM', branches: [[name: "*/${env.GIT_BRANCH}"]], userRemoteConfigs: [[url: "${env.GIT_REPO_URL}", credentialsId: "${env.GIT_CREDENTIALS_ID}"]]])
             }
         }
-
-        stage('Test') {
+        stage('Detect Change') {
             steps {
-                sh 'echo "Running tests..."'
+                script {
+                    def changed = sh(script: "git diff --name-only HEAD~1 HEAD | grep '.php' | head -n 1", returnStdout: true).trim()
+                    env.TARGET_PHP_FILE = changed ?: "index.php"
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh '''
+                # Only runs if test.py exited with 0
+                sudo rsync -av --delete --exclude='venv/' --exclude='.git/' --exclude='staging/' ./ /var/www/html/
+                sudo chown -R www-data:www-data /var/www/html/
+                '''
             }
         }
     }
